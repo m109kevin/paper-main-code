@@ -25,8 +25,8 @@ import math
 
 yolo = Load_Yolo_model()
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM) # 使用GPIO的引腳編號（BCM編號）來標識GPIO引腳。
+GPIO.setwarnings(False) # 清除GPIO設定
 
 GPIO.setup(27,GPIO.OUT)
 servo1 = GPIO.PWM(27,50)
