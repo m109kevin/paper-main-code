@@ -1,4 +1,4 @@
-# main code is detection_demo yolov3.utils and car_code
+# main code is detection_demo, yolov3.utils and car_code
 
 
 
