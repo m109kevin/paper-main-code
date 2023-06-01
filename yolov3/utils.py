@@ -186,6 +186,17 @@ def draw_bbox(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, show_co
 
     return image
 
+# draw_location由上面的draw_bbox修改而來，draw_bbox為畫出物件邊界框4個邊的函示
+# 實驗中訓練的label有4個，分別可辨識數字1, 2, 3的標誌和停車格上的車
+# 數字1, 2, 3是為了計算自身車子與車格的相對座標用
+# 而實驗中draw_location return 是否偵測到車，數字邊界框的右邊框座標等2項資料
+# 參考論文36-40
+# ----------------------------------------------------------------------------------
+# 停車格上的車的label為辨識右方有無車位，如果辨識出車，代表右方有車，所以右方無車位，車輛繼續向前走找尋車位
+# 如果抓到車的label，代表右方有車return detect = 'detect_car' ,和數字右邊界框座標x2
+# 如果沒抓到車的label，代表右方沒車，即發現車位，return detect = 'detect_no_car'(draw_location函式第1行預設值),和數字右邊界框座標x2
+# 參考論文55-58頁
+
 def draw_location(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, show_confidence = True, Text_colors=(255,255,0), rectangle_colors='', tracking=False):   
     detect = 'detect_no_car'
     
@@ -203,7 +214,7 @@ def draw_location(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, sho
     
     # n = 0
     read_three = False
-    for i, bbox in enumerate(bboxes):
+    for i, bbox in enumerate(bboxes): # 一次的辨識可能抓出多個物件，由for迴圈跑過每一個label
         coor = np.array(bbox[:4], dtype=np.int32)
         score = bbox[4]
         class_ind = int(bbox[5])
@@ -214,7 +225,7 @@ def draw_location(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, sho
         (x1, y1), (x2, y2) = (coor[0], coor[1]), (coor[2], coor[3])
 
         # put object rectangle
-        cv2.rectangle(image, (x1, y1), (x2, y2), bbox_color, bbox_thick*2)
+        cv2.rectangle(image, (x1, y1), (x2, y2), bbox_color, bbox_thick*2) #畫出邊界框的4個邊，其中x1,x2,y1,y2為邊的4個座標
 
         if show_label:
             # get text label
@@ -222,10 +233,13 @@ def draw_location(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, sho
 
             if tracking: score_str = " "+str(score)
 
+            # 訓練時label的順序為car, one, three, two(參考paper-main-code的model_data的car_names)
+            # 所以第一個迴圈會辨識出車子是否被辨識到,沒被辨識到時detect = 'detect_no_car'(draw_location函式第1行預設值)，有被辨識到時detect = 'detect_car'
+            # 接下來return照片中數字的座標，假如有2個數字出現在照片中，return 右邊數字的座標
             try:
                 label = "{}".format(NUM_CLASS[class_ind]) + score_str
-                label_name = "{}".format(NUM_CLASS[class_ind])
-                if label_name == 'car':
+                label_name = "{}".format(NUM_CLASS[class_ind]) # 抓到物件時，label_name為物件名稱
+                if label_name == 'car': # 如果抓到car，detect == 'detect_car'
                     detect = 'detect_car'
                     print('detect:',detect)
                 if label_name == 'one':
@@ -656,7 +670,7 @@ def detect_realtime(Yolo, output_path, input_size=416, show=False, CLASSES=TRAIN
                 break
 
     cv2.destroyAllWindows()
-
+# detect_realtime_little 是為了得到是否右方有車，自申徹輛座標等資訊，重點在第727行(location = draw_location(original_frame, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors))
 def detect_realtime_little(Yolo, output_path, input_size=416, show=False, CLASSES=TRAIN_CLASSES, score_threshold=0.3, iou_threshold=0.45, rectangle_colors=''):
         
     times = []
@@ -710,7 +724,10 @@ def detect_realtime_little(Yolo, output_path, input_size=416, show=False, CLASSE
         print("Time: {:.2f}ms, {:.1f} FPS".format(ms, fps))
 
         # frame = draw_bbox(original_frame, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
-        location = draw_location(original_frame, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
+        location = draw_location(original_frame, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors) # 請看上面的draw_location函式
+        # location是一個大小為2的list
+        # location[0] = 'detect_car' or 'detect_no_car'代表是否有在右方辨識出車子 
+        # location[1] = 數字右邊框的座標
 
         print('detect_real_location',location)
         return location
