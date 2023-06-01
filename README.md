@@ -1,4 +1,7 @@
 # main code is detection_demo, yolov3.utils and car_code
+## First read detection_demo
+## Second read part of car_code by notes of detection_demo
+## Third read part of yolov3.utils by notes of detection_demo
 
 
 
